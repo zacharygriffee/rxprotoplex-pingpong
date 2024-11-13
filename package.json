@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "brittle ./test/**/*.js"
+    "test": "brittle ./test.js"
   },
   "author": "Zachary Griffee <zacharygriffee@gmail.com>",
   "license": "MIT",
