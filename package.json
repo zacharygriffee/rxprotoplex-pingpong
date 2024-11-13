@@ -1,0 +1,28 @@
+{
+  "name": "rxprotoplex-pingpong",
+  "version": "0.1.0",
+  "description": "A ping-pong mechanism using rxprotoplex and RxJS for managing reliable connections.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "brittle ./test/**/*.js"
+  },
+  "author": "Zachary Griffee <zacharygriffee@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/zacharygriffee/rxprotoplex-pingpong#readme",
+  "keywords": [
+    "ping-pong",
+    "rxjs",
+    "rxprotoplex",
+    "heartbeat",
+    "connection-management"
+  ],
+  "dependencies": {
+    "b4a": "^1.6.7",
+    "rxjs": "^7.8.1",
+    "rxprotoplex": "^1.1.1"
+  },
+  "devDependencies": {
+    "brittle": "^3.7.0"
+  }
+}
