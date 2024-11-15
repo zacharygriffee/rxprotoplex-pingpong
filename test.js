@@ -168,6 +168,70 @@ test('Heartbeat Timeout Triggers Disconnection', async (t) => {
     });
 });
 
+test('Other side doesn\'t support ping pong', async (t) => {
+    t.comment("The side that does will attempt to reconnect at least 3 times.");
+
+    // Create a pair of plex instances
+    const [initiatorPlex, listenerPlex] = createPlexPair();
+
+    // Flags to track destruction
+    let initiatorDestroyed = false;
+    let listenerDestroyed = false;
+
+    // Mock destroy methods for testing
+    initiatorPlex.destroy = (error) => {
+        initiatorDestroyed = true;
+        t.ok(true, `Initiator Plex destroyed due to: ${error?.message || 'No specific error message'}`);
+    };
+    listenerPlex.destroy = (error) => {
+        listenerDestroyed = true;
+        t.ok(true, `Listener Plex destroyed due to: ${error?.message || 'No specific error message'}`);
+    };
+
+    // Start ping-pong on the initiator only
+    const initiatorEvents$ = plexPingPong(initiatorPlex, true, {
+        channel: '$PINGPONG$',
+        interval: 500,
+        connectionTimeout: 200,
+    });
+
+    let errorEmitted = false;
+
+    // Promise to handle initiator's error
+    const errorPromise = new Promise((resolve) => {
+        initiatorEvents$.subscribe({
+            next: (event) => {
+                t.ok(['ping', 'pong'].includes(event.type), `Initiator received event type: ${event.type}`);
+            },
+            error: (err) => {
+                errorEmitted = true;
+                t.ok(err, `Initiator encountered expected error: ${err.message}`);
+                resolve();
+            },
+            complete: () => {
+                t.fail('Observable completed unexpectedly');
+                resolve();
+            },
+        });
+    });
+
+    // Wait for error to propagate
+    await errorPromise;
+
+    // Validate results
+    t.ok(errorEmitted, 'Error was emitted due to lack of pong response');
+    t.ok(initiatorDestroyed, 'Initiator Plex was destroyed as expected');
+    t.ok(!listenerDestroyed, 'Listener Plex remained intact as expected due to passive behavior');
+
+    // Teardown
+    t.teardown(() => {
+        destroy(initiatorPlex);
+        destroy(listenerPlex);
+    });
+});
+
+
+
 test('Manual Disconnection via Unsubscribe Method', async (t) => {
     // Create a pair of plex instances
     const [initiatorPlex, listenerPlex] = createPlexPair();

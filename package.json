@@ -1,6 +1,6 @@
 {
   "name": "rxprotoplex-pingpong",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A ping-pong mechanism using rxprotoplex and RxJS for managing reliable connections.",
   "main": "index.js",
   "type": "module",
