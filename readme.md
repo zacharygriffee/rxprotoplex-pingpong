@@ -1,6 +1,6 @@
 # rxprotoplex-pingpong
 
-A robust RxJS-based ping-pong mechanism leveraging `rxprotoplex` to maintain reliable, multiplexed connections over potentially unreliable networks. Designed for applications requiring real-time communication with health checks, it provides a heartbeat mechanism to detect and handle connectivity issues seamlessly.
+A robust RxJS-based ping-pong mechanism leveraging `rxprotoplex` to maintain reliable, multiplexed connections over potentially unreliable networks. Designed for applications requiring real-time communication with connection health checks, it provides a heartbeat mechanism to detect and handle connectivity issues seamlessly.
 
 ## Features
 
@@ -18,20 +18,26 @@ npm install rxprotoplex-pingpong
 
 ## Usage
 
-### Initiating a Connection
+The library provides two main functions to manage connections:
 
-Use the `plexPingPong` function to manage a ping-pong mechanism over a Plex connection. It emits an observable that provides `{ type, plex }` for each event, where `type` is either `"ping"` or `"pong"`, and `plex` represents the connection responsible for the event.
+- `connectAndPingPong$`: Use this function to initiate a connection and periodically send "ping" messages.
+- `listenAndConnectionAndPingPong$`: Use this function to listen for incoming connections and respond with "pong" messages.
 
-#### Example: Initiating a Ping-Pong Connection
+Each function returns an observable that emits `{ type, plex }` for each event, where `type` is either `"ping"` or `"pong"`, and `plex` is the associated connection.
+
+### Example: Initiating a Ping-Pong Connection
+
+Use `connectAndPingPong$` to initiate a connection that sends "ping" messages at regular intervals.
+
 ```javascript
 import { createPlexPair } from 'rxprotoplex';
-import { plexPingPong } from 'rxprotoplex-pingpong';
+import { connectAndPingPong$ } from 'rxprotoplex-pingpong';
 
 // Create Plex instances
 const [initiatorPlex, listenerPlex] = createPlexPair();
 
 // Initiator starts ping-pong
-const initiatorEvents$ = plexPingPong(initiatorPlex, true, { 
+const initiatorEvents$ = connectAndPingPong$(initiatorPlex, { 
     channel: '$PINGPONG$', 
     interval: 1000, 
     log: true 
@@ -43,9 +49,14 @@ initiatorEvents$.subscribe({
 });
 ```
 
-#### Example: Listening for a Ping-Pong Connection
+### Example: Listening for a Ping-Pong Connection
+
+Use `listenAndConnectionAndPingPong$` to set up a listener connection that responds with "pong" to "ping" messages, keeping the connection alive.
+
 ```javascript
-const listenerEvents$ = plexPingPong(listenerPlex, false, { 
+import { listenAndConnectionAndPingPong$ } from 'rxprotoplex-pingpong';
+
+const listenerEvents$ = listenAndConnectionAndPingPong$(listenerPlex, { 
     channel: '$PINGPONG$', 
     interval: 1000, 
     log: true 
@@ -61,25 +72,26 @@ listenerEvents$.subscribe({
 
 ## Configuration Options
 
-The `plexPingPong` function accepts a `config` object with the following options:
+The functions `connectAndPingPong$` and `listenAndConnectionAndPingPong$` accept a `config` object with the following options:
 
-| Option               | Type                       | Default      | Description                                                                 |
-|-----------------------|----------------------------|--------------|-----------------------------------------------------------------------------|
+| Option               | Type                       | Default       | Description                                                                 |
+|----------------------|----------------------------|---------------|-----------------------------------------------------------------------------|
 | **channel**          | `string \| Uint8Array \| Buffer` | `$PINGPONG$` | The channel identifier for the connection.                                 |
-| **interval**         | `number`                  | `6000`       | Interval (in milliseconds) between "ping" messages.                        |
-| **connectionTimeout**| `number`                  | `1000`       | Timeout (in milliseconds) for initial connection setup.                    |
-| **retryDelay**       | `number`                  | `1000`       | Delay (in milliseconds) between reconnection attempts.                     |
-| **reconnectAttemptCount** | `number`              | `3`          | Maximum number of reconnection attempts before giving up.                  |
-| **log**              | `boolean`                 | `false`      | Enables console logging for connection events.                             |
-| **onPingPongFailure**| `Function`                | `undefined`  | Custom handler for ping-pong failures (e.g., custom reconnection logic).   |
+| **interval**         | `number`                  | `6000`        | Interval (in milliseconds) between "ping" messages.                        |
+| **connectionTimeout**| `number`                  | `1000`        | Timeout (in milliseconds) for initial connection setup.                    |
+| **retryDelay**       | `number`                  | `1000`        | Delay (in milliseconds) between reconnection attempts.                     |
+| **reconnectAttemptCount** | `number`             | `3`           | Maximum number of reconnection attempts before giving up.                  |
+| **log**              | `boolean`                 | `false`       | Enables console logging for connection events.                             |
+| **onPingPongFailure**| `Function`                | `undefined`   | Custom handler for ping-pong failures (e.g., custom reconnection logic).   |
 
 ---
 
 ## Advanced Example: Custom Failure Handling
-You can provide a custom handler to manage connection failures without propagating errors.
+
+You can provide a custom handler to manage connection failures without propagating errors, allowing for custom reconnection logic or other actions.
 
 ```javascript
-const initiatorEvents$ = plexPingPong(initiatorPlex, true, {
+const initiatorEvents$ = connectAndPingPong$(initiatorPlex, {
     channel: '$CUSTOM_CHANNEL$',
     interval: 2000,
     log: true,
@@ -109,19 +121,35 @@ npm test
 
 ## API Reference
 
-### `plexPingPong(plex, isInitiator, config)`
-Manages a ping-pong mechanism over a Plex connection.
+### `connectAndPingPong$(plex, config)`
+
+Initiates a connection as the initiator on the provided Plex instance and manages a ping-pong mechanism to maintain connection health.
 
 #### Parameters:
 - **plex**: The Plex connection object from `rxprotoplex`.
-- **isInitiator**: A boolean flag indicating whether this instance initiates the connection.
 - **config**: Configuration object (see [Options](#configuration-options)).
 
 #### Returns:
 An RxJS Observable that emits:
 - `{ type: 'ping', plex }` for sent pings.
 - `{ type: 'pong', plex }` for received pongs.
-- Error or completion signals upon connection loss.
+- Error or completion signals when the connection is lost or closed.
+
+---
+
+### `listenAndConnectionAndPingPong$(plex, config)`
+
+Creates a listening connection on the provided Plex instance, automatically responding to ping messages to maintain connection health.
+
+#### Parameters:
+- **plex**: The Plex connection object from `rxprotoplex`.
+- **config**: Configuration object (see [Options](#configuration-options)).
+
+#### Returns:
+An RxJS Observable that emits:
+- `{ type: 'ping', plex }` for sent pings.
+- `{ type: 'pong', plex }` for received pongs.
+- Error or completion signals when the connection is lost or closed.
 
 ---
 
