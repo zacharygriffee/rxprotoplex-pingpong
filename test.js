@@ -6,13 +6,6 @@ test('Ping-Pong Communication between Initiator and Listener', async (t) => {
     // Create a pair of plex instances
     const [initiatorPlex, listenerPlex] = createPlexPair();
 
-    // Mock destroy method for testing
-    initiatorPlex.destroy = (error) => {
-        t.ok(true, `Initiator Plex destroyed due to: ${error.message}`);
-    };
-    listenerPlex.destroy = (error) => {
-        t.ok(true, `Listener Plex destroyed due to: ${error.message}`);
-    };
 
     // Start ping-pong on both sides with default behavior (no custom handler)
     const initiatorEvents$ = plexPingPong(initiatorPlex, true, { channel: '$PINGPONG$', interval: 500 });
@@ -89,14 +82,6 @@ test('Ping-Pong Communication between Initiator and Listener', async (t) => {
 test('Heartbeat Timeout Triggers Disconnection', async (t) => {
     // Create a pair of plex instances
     const [initiatorPlex, listenerPlex] = createPlexPair();
-
-    // Mock destroy method for testing
-    initiatorPlex.destroy = (error) => {
-        t.ok(true, `Initiator Plex destroyed due to: ${error.message}`);
-    };
-    listenerPlex.destroy = (error) => {
-        t.ok(true, `Listener Plex destroyed due to: ${error.message}`);
-    };
 
     // Start ping-pong on both sides with a short interval (no custom handler)
     const initiatorEvents$ = plexPingPong(initiatorPlex, true, { channel: '$PINGPONG$', interval: 500 });
@@ -179,14 +164,14 @@ test('Other side doesn\'t support ping pong', async (t) => {
     let listenerDestroyed = false;
 
     // Mock destroy methods for testing
-    initiatorPlex.destroy = (error) => {
+    initiatorPlex.close$.subscribe((error) => {
         initiatorDestroyed = true;
         t.ok(true, `Initiator Plex destroyed due to: ${error?.message || 'No specific error message'}`);
-    };
-    listenerPlex.destroy = (error) => {
+    });
+    listenerPlex.close$.subscribe(error => {
         listenerDestroyed = true;
         t.ok(true, `Listener Plex destroyed due to: ${error?.message || 'No specific error message'}`);
-    };
+    })
 
     // Start ping-pong on the initiator only
     const initiatorEvents$ = plexPingPong(initiatorPlex, true, {
