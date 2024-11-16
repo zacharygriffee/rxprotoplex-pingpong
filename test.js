@@ -206,7 +206,7 @@ test('Other side doesn\'t support ping pong', async (t) => {
     // Validate results
     t.ok(errorEmitted, 'Error was emitted due to lack of pong response');
     t.ok(initiatorDestroyed, 'Initiator Plex was destroyed as expected');
-    t.ok(!listenerDestroyed, 'Listener Plex remained intact as expected due to passive behavior');
+    t.ok(listenerDestroyed, 'Listener Plex was destroyed as expected');
 
     // Teardown
     t.teardown(() => {
